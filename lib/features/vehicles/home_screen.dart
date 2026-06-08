@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -90,64 +92,76 @@ class _VehicleCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final reminders = ref.watch(itemRemindersProvider(vehicle.id));
+    final photo = vehicle.imagePath.isEmpty ? null : File(vehicle.imagePath);
+    final hasPhoto = photo != null && photo.existsSync();
     return Card(
-      child: InkWell(
-        borderRadius: BorderRadius.circular(8),
-        onTap: () => Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => VehicleDetailScreen(vehicleId: vehicle.id),
-          ),
+      clipBehavior: Clip.antiAlias,
+      elevation: 6,
+      shadowColor: Colors.black.withValues(alpha: 0.18),
+      child: Ink(
+        decoration: BoxDecoration(
+          image: hasPhoto
+              ? DecorationImage(image: FileImage(photo), fit: BoxFit.cover)
+              : null,
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+        child: InkWell(
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => VehicleDetailScreen(vehicleId: vehicle.id),
+            ),
+          ),
+          child: Stack(
             children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
+              if (hasPhoto)
+                const Positioned.fill(
+                  child: ColoredBox(color: Color(0x99FFFFFF)),
+                ),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
                       vehicle.name,
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
-                  ),
-                  Chip(label: Text(vehicle.profile.label)),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text(
-                '${vehicle.currentKm} km hiện tại • ${vehicle.dailyKm.toStringAsFixed(1)} km/ngày',
-              ),
-              const SizedBox(height: 12),
-              reminders.when(
-                data: (items) {
-                  if (items.isEmpty) {
-                    return const Text('Chưa có hạng mục bảo trì.');
-                  }
-                  final first = items.first;
-                  final date = first.estimatedDueDate;
-                  final label = date == null
-                      ? 'Cần nhập km/ngày để tính bảo dưỡng tiếp theo'
-                      : 'Bảo dưỡng tiếp theo: ${relativeDateLabel(date)}';
-                  return Row(
-                    children: [
-                      Icon(
-                        _statusIcon(first.status),
-                        color: _statusColor(context, first.status),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          '$label • ${first.item.name}',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  );
-                },
-                loading: () => const LinearProgressIndicator(),
-                error: (error, _) => Text('Có lỗi: $error'),
+                    const SizedBox(height: 8),
+                    Text(
+                      '${vehicle.currentKm} km hiện tại • ${vehicle.dailyKm.toStringAsFixed(1)} km/ngày',
+                    ),
+                    const SizedBox(height: 12),
+                    reminders.when(
+                      data: (items) {
+                        if (items.isEmpty) {
+                          return const Text('Chưa có hạng mục bảo trì.');
+                        }
+                        final first = items.first;
+                        final date = first.estimatedDueDate;
+                        final label = date == null
+                            ? 'Cần nhập km/ngày để tính bảo dưỡng tiếp theo'
+                            : 'Bảo dưỡng tiếp theo: ${relativeDateLabel(date)}';
+                        return Row(
+                          children: [
+                            Icon(
+                              _statusIcon(first.status),
+                              color: _statusColor(context, first.status),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                '$label • ${first.item.name}',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                      loading: () => const LinearProgressIndicator(),
+                      error: (error, _) => Text('Có lỗi: $error'),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),

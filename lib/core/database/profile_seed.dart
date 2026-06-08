@@ -95,6 +95,58 @@ extension VehicleProfileSeeds on VehicleProfile {
           intervalMaxKm: 10000,
         ),
       ],
+      VehicleProfile.electricMotorbike => const [
+        MaintenanceSeed(
+          name: 'Má phanh',
+          description: 'Kiểm tra độ mòn má phanh',
+          intervalMinKm: 5000,
+          intervalMaxKm: 8000,
+        ),
+        MaintenanceSeed(
+          name: 'Lốp xe',
+          description: 'Kiểm tra áp suất và độ mòn lốp',
+          intervalMinKm: 3000,
+          intervalMaxKm: 5000,
+        ),
+        MaintenanceSeed(
+          name: 'Pin/ắc quy',
+          description: 'Kiểm tra tình trạng pin hoặc ắc quy',
+          intervalMinKm: 8000,
+          intervalMaxKm: 12000,
+        ),
+        MaintenanceSeed(
+          name: 'Dây điện và giắc cắm',
+          description: 'Kiểm tra dây điện, giắc cắm và cổng sạc',
+          intervalMinKm: 5000,
+          intervalMaxKm: 8000,
+        ),
+      ],
+      VehicleProfile.bicycle => const [
+        MaintenanceSeed(
+          name: 'Xích',
+          description: 'Vệ sinh và tra dầu xích',
+          intervalMinKm: 200,
+          intervalMaxKm: 400,
+        ),
+        MaintenanceSeed(
+          name: 'Phanh',
+          description: 'Kiểm tra má phanh và độ ăn phanh',
+          intervalMinKm: 500,
+          intervalMaxKm: 800,
+        ),
+        MaintenanceSeed(
+          name: 'Lốp xe',
+          description: 'Kiểm tra áp suất, gai lốp và săm',
+          intervalMinKm: 500,
+          intervalMaxKm: 1000,
+        ),
+        MaintenanceSeed(
+          name: 'Bạc đạn',
+          description: 'Kiểm tra độ rơ bánh xe, trục giữa và cổ phốt',
+          intervalMinKm: 1500,
+          intervalMaxKm: 2500,
+        ),
+      ],
     };
   }
 }

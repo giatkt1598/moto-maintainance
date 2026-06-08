@@ -376,7 +376,7 @@ class _BatchSection extends ConsumerWidget {
                 child: Padding(
                   padding: EdgeInsets.all(16),
                   child: Text(
-                    'Chưa có hạng mục đến hạn trong cửa sổ gom lịch.',
+                    'Chưa có hạng mục đến hạn trong cửa sổ nhắc nhở.',
                   ),
                 ),
               )
@@ -529,48 +529,31 @@ class _MaintenanceTile extends ConsumerWidget {
       key: ValueKey(item.id),
       startActionPane: ActionPane(
         motion: const DrawerMotion(),
-        extentRatio: 0.44,
+        extentRatio: 0.48,
         dismissible: DismissiblePane(
-          onDismissed: () {
-            _markCompleted(context, ref, item);
+          closeOnCancel: true,
+          confirmDismiss: () async {
+            await _markCompleted(context, ref, item);
+            return false;
           },
+          onDismissed: () {},
         ),
         children: [
-          _SlidableCardAction(
-            icon: Icons.check,
-            label: 'Đã hoàn thành',
-            color: Colors.green,
+          _CompleteSlidableAction(
             onPressed: (_) => _markCompleted(context, ref, item),
-          ),
-        ],
-      ),
-      endActionPane: ActionPane(
-        motion: const DrawerMotion(),
-        extentRatio: 0.56,
-        children: [
-          _SlidableCardAction(
-            onPressed: (_) {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) =>
-                      MaintenanceItemFormScreen(vehicle: vehicle, item: item),
-                ),
-              );
-            },
-            icon: Icons.edit,
-            label: 'Sửa',
-            color: Theme.of(context).colorScheme.primary,
-          ),
-          _SlidableCardAction(
-            onPressed: (_) => _confirmDelete(context, ref, item),
-            icon: Icons.delete_outline,
-            label: 'Xóa',
-            color: Theme.of(context).colorScheme.error,
           ),
         ],
       ),
       child: Card(
         child: ListTile(
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) =>
+                    MaintenanceItemFormScreen(vehicle: vehicle, item: item),
+              ),
+            );
+          },
           title: Text(item.name),
           subtitle: Text(
             '${_itemCycleText(item)} • lần cuối ${item.lastServiceKm} km'
@@ -599,46 +582,11 @@ class _MaintenanceTile extends ConsumerWidget {
       ).showSnackBar(SnackBar(content: Text('Đã hoàn thành ${item.name}')));
     }
   }
-
-  Future<void> _confirmDelete(
-    BuildContext context,
-    WidgetRef ref,
-    MaintenanceItem item,
-  ) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Xóa hạng mục?'),
-        content: Text('Hạng mục "${item.name}" sẽ bị xóa.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Hủy'),
-          ),
-          FilledButton.icon(
-            onPressed: () => Navigator.of(context).pop(true),
-            icon: const Icon(Icons.delete_outline),
-            label: const Text('Xóa'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true) return;
-    await ref.read(appActionsProvider).deleteItem(item);
-  }
 }
 
-class _SlidableCardAction extends StatelessWidget {
-  const _SlidableCardAction({
-    required this.icon,
-    required this.label,
-    required this.color,
-    required this.onPressed,
-  });
+class _CompleteSlidableAction extends StatelessWidget {
+  const _CompleteSlidableAction({required this.onPressed});
 
-  final IconData icon;
-  final String label;
-  final Color color;
   final SlidableActionCallback onPressed;
 
   @override
@@ -652,7 +600,7 @@ class _SlidableCardAction extends StatelessWidget {
         width: double.infinity,
         height: double.infinity,
         decoration: BoxDecoration(
-          color: color,
+          color: Colors.green,
           borderRadius: BorderRadius.circular(4),
           boxShadow: const [
             BoxShadow(
@@ -662,22 +610,27 @@ class _SlidableCardAction extends StatelessWidget {
             ),
           ],
         ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: Colors.white, size: 20),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.w700,
-              ),
+        child: Center(
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.check, color: Colors.white, size: 20),
+                const SizedBox(width: 6),
+                Text(
+                  'Đã hoàn thành',
+                  maxLines: 1,
+                  overflow: TextOverflow.fade,
+                  softWrap: false,
+                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );

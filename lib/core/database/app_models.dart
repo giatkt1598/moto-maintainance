@@ -1,13 +1,17 @@
 enum VehicleProfile {
   scooter,
   manualClutch,
-  underbone;
+  underbone,
+  electricMotorbike,
+  bicycle;
 
   String get label {
     return switch (this) {
       VehicleProfile.scooter => 'Xe ga',
       VehicleProfile.manualClutch => 'Xe tay côn',
       VehicleProfile.underbone => 'Xe số',
+      VehicleProfile.electricMotorbike => 'Xe máy điện',
+      VehicleProfile.bicycle => 'Xe đạp',
     };
   }
 }

@@ -31,8 +31,10 @@ class _MaintenanceItemFormScreenState
   late final TextEditingController _lastKm;
   late _TimeUnit _timeUnit;
   late DateTime _lastServiceDate;
-  late bool _enabled;
+  late bool _useKmCycle;
+  late bool _useTimeCycle;
   bool _saving = false;
+  bool _deleting = false;
 
   @override
   void initState() {
@@ -65,7 +67,8 @@ class _MaintenanceItemFormScreenState
       text: '${item?.lastServiceKm ?? widget.vehicle.currentKm}',
     );
     _lastServiceDate = item?.lastServiceDate ?? DateTime.now();
-    _enabled = item?.isEnabled ?? true;
+    _useKmCycle = item?.hasKmInterval ?? true;
+    _useTimeCycle = item?.hasTimeInterval ?? false;
   }
 
   @override
@@ -99,13 +102,19 @@ class _MaintenanceItemFormScreenState
             TextFormField(
               controller: _description,
               decoration: const InputDecoration(labelText: 'Mô tả'),
-              minLines: 1,
-              maxLines: 3,
+              keyboardType: TextInputType.multiline,
+              textInputAction: TextInputAction.newline,
+              minLines: 3,
+              maxLines: 6,
             ),
             const SizedBox(height: 12),
-            Text(
-              'Chu kỳ theo km',
-              style: Theme.of(context).textTheme.titleSmall,
+            CheckboxListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Chu kỳ theo km'),
+              value: _useKmCycle,
+              controlAffinity: ListTileControlAffinity.leading,
+              onChanged: (value) =>
+                  setState(() => _useKmCycle = value ?? _useKmCycle),
             ),
             const SizedBox(height: 8),
             Row(
@@ -113,6 +122,7 @@ class _MaintenanceItemFormScreenState
                 Expanded(
                   child: TextFormField(
                     controller: _minKm,
+                    enabled: _useKmCycle,
                     decoration: const InputDecoration(labelText: 'Min km'),
                     keyboardType: TextInputType.number,
                     validator: _optionalPositiveInt,
@@ -122,6 +132,7 @@ class _MaintenanceItemFormScreenState
                 Expanded(
                   child: TextFormField(
                     controller: _maxKm,
+                    enabled: _useKmCycle,
                     decoration: const InputDecoration(labelText: 'Max km'),
                     keyboardType: TextInputType.number,
                     validator: _optionalPositiveInt,
@@ -130,9 +141,13 @@ class _MaintenanceItemFormScreenState
               ],
             ),
             const SizedBox(height: 12),
-            Text(
-              'Chu kỳ theo thời gian',
-              style: Theme.of(context).textTheme.titleSmall,
+            CheckboxListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Chu kỳ theo thời gian'),
+              value: _useTimeCycle,
+              controlAffinity: ListTileControlAffinity.leading,
+              onChanged: (value) =>
+                  setState(() => _useTimeCycle = value ?? _useTimeCycle),
             ),
             const SizedBox(height: 8),
             Row(
@@ -140,6 +155,7 @@ class _MaintenanceItemFormScreenState
                 Expanded(
                   child: TextFormField(
                     controller: _minTime,
+                    enabled: _useTimeCycle,
                     decoration: const InputDecoration(labelText: 'Min'),
                     keyboardType: TextInputType.number,
                     validator: _optionalPositiveInt,
@@ -149,6 +165,7 @@ class _MaintenanceItemFormScreenState
                 Expanded(
                   child: TextFormField(
                     controller: _maxTime,
+                    enabled: _useTimeCycle,
                     decoration: const InputDecoration(labelText: 'Max'),
                     keyboardType: TextInputType.number,
                     validator: _optionalPositiveInt,
@@ -168,8 +185,10 @@ class _MaintenanceItemFormScreenState
                           ),
                         )
                         .toList(),
-                    onChanged: (value) =>
-                        setState(() => _timeUnit = value ?? _timeUnit),
+                    onChanged: _useTimeCycle
+                        ? (value) =>
+                              setState(() => _timeUnit = value ?? _timeUnit)
+                        : null,
                   ),
                 ),
               ],
@@ -191,16 +210,9 @@ class _MaintenanceItemFormScreenState
               trailing: const Icon(Icons.calendar_month),
               onTap: _pickLastServiceDate,
             ),
-            const SizedBox(height: 12),
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              title: const Text('Đang theo dõi'),
-              value: _enabled,
-              onChanged: (value) => setState(() => _enabled = value),
-            ),
             const SizedBox(height: 20),
             FilledButton.icon(
-              onPressed: _saving ? null : _save,
+              onPressed: _saving || _deleting ? null : _save,
               icon: _saving
                   ? const SizedBox.square(
                       dimension: 18,
@@ -209,6 +221,23 @@ class _MaintenanceItemFormScreenState
                   : const Icon(Icons.save),
               label: Text(editing ? 'Lưu hạng mục' : 'Thêm hạng mục'),
             ),
+            if (editing) ...[
+              const SizedBox(height: 12),
+              FilledButton.icon(
+                style: FilledButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.error,
+                  foregroundColor: Theme.of(context).colorScheme.onError,
+                ),
+                onPressed: _saving || _deleting ? null : _confirmDelete,
+                icon: _deleting
+                    ? const SizedBox.square(
+                        dimension: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.delete_outline),
+                label: const Text('Xóa hạng mục'),
+              ),
+            ],
           ],
         ),
       ),
@@ -217,12 +246,12 @@ class _MaintenanceItemFormScreenState
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
-    final minKm = _parseOptionalInt(_minKm.text);
-    final maxKm = _parseOptionalInt(_maxKm.text);
-    final minTime = _parseOptionalInt(_minTime.text);
-    final maxTime = _parseOptionalInt(_maxTime.text);
-    final hasKm = minKm > 0 || maxKm > 0;
-    final hasTime = minTime > 0 || maxTime > 0;
+    final minKm = _useKmCycle ? _parseOptionalInt(_minKm.text) : 0;
+    final maxKm = _useKmCycle ? _parseOptionalInt(_maxKm.text) : 0;
+    final minTime = _useTimeCycle ? _parseOptionalInt(_minTime.text) : 0;
+    final maxTime = _useTimeCycle ? _parseOptionalInt(_maxTime.text) : 0;
+    final hasKm = _useKmCycle;
+    final hasTime = _useTimeCycle;
 
     if (!hasKm && !hasTime) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -279,7 +308,7 @@ class _MaintenanceItemFormScreenState
             intervalMaxDays: maxDays,
             lastServiceKm: int.parse(_lastKm.text),
             lastServiceDate: _lastServiceDate,
-            isEnabled: _enabled,
+            isEnabled: item.isEnabled,
             createdAt: item.createdAt,
             updatedAt: DateTime.now(),
           ),
@@ -300,6 +329,43 @@ class _MaintenanceItemFormScreenState
     );
     if (selected == null) return;
     setState(() => _lastServiceDate = selected);
+  }
+
+  Future<void> _confirmDelete() async {
+    final item = widget.item;
+    if (item == null) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Xóa hạng mục?'),
+        content: Text('Hạng mục "${item.name}" sẽ bị xóa.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Hủy'),
+          ),
+          FilledButton.icon(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+              foregroundColor: Theme.of(context).colorScheme.onError,
+            ),
+            onPressed: () => Navigator.of(context).pop(true),
+            icon: const Icon(Icons.delete_outline),
+            label: const Text('Xóa'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    setState(() => _deleting = true);
+    try {
+      await ref.read(appActionsProvider).deleteItem(item);
+      if (mounted) Navigator.of(context).pop();
+    } finally {
+      if (mounted) setState(() => _deleting = false);
+    }
   }
 }
 

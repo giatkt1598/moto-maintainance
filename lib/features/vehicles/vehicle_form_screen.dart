@@ -93,7 +93,7 @@ class _VehicleFormScreenState extends ConsumerState<VehicleFormScreen> {
             const SizedBox(height: 12),
             DropdownButtonFormField<VehicleProfile>(
               initialValue: _profile,
-              decoration: const InputDecoration(labelText: 'Profile'),
+              decoration: const InputDecoration(labelText: 'Loại xe'),
               items: VehicleProfile.values
                   .map(
                     (profile) => DropdownMenuItem(
@@ -126,7 +126,7 @@ class _VehicleFormScreenState extends ConsumerState<VehicleFormScreen> {
             TextFormField(
               controller: _groupDays,
               decoration: const InputDecoration(
-                labelText: 'Gom lịch trong bao nhiêu ngày',
+                labelText: 'Nhắc nhở sau bao nhiêu ngày',
               ),
               keyboardType: TextInputType.number,
               validator: _positiveInt,
