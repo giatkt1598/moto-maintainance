@@ -14,7 +14,7 @@ class ServiceLogsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final logs = ref.watch(serviceLogsProvider(vehicleId));
     return Scaffold(
-      appBar: AppBar(title: const Text('Lịch sử bảo trì')),
+      appBar: AppBar(title: const Text('Lịch sử bảo dưỡng')),
       body: AsyncValueView(
         value: logs,
         data: (items) {

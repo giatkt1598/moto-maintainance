@@ -15,11 +15,12 @@ class ReminderCalculator {
       final nextDueKm = hasKm
           ? item.lastServiceKm + item.midpointKm
           : item.lastServiceKm;
-      final overdueKm = hasKm
+      final overdueLimitKm = hasKm
           ? item.lastServiceKm + item.intervalMaxKm
           : item.lastServiceKm;
+      final overdueKm = hasKm ? vehicle.currentKm - overdueLimitKm : 0.0;
       final remainingKm = hasKm ? nextDueKm - vehicle.currentKm : 0.0;
-      final kmOverdue = hasKm && vehicle.currentKm >= overdueKm;
+      final kmOverdue = hasKm && overdueKm > 0;
       final kmDue = hasKm && remainingKm <= 0;
       final DateTime? kmDueDate = hasKm && vehicle.dailyKm > 0
           ? today.add(
@@ -43,13 +44,15 @@ class ReminderCalculator {
       ReminderStatus status;
 
       estimatedDueDate = _earliestDate(kmDueDate, timeDueDate);
-      final timeOverdue = overdueDate != null && !today.isBefore(overdueDate);
       final timeDue = timeDueDate != null && !today.isBefore(timeDueDate);
+      final timeOverdueDays = overdueDate == null
+          ? 0
+          : today.difference(overdueDate).inDays;
 
       if (hasKm && !hasTime && vehicle.dailyKm <= 0) {
         status = ReminderStatus.missingDailyKm;
       } else {
-        if (kmOverdue || timeOverdue) {
+        if (kmOverdue || timeOverdueDays > 0) {
           status = ReminderStatus.overdue;
         } else if (kmDue || timeDue) {
           status = ReminderStatus.due;

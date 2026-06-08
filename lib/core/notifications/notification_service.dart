@@ -50,7 +50,7 @@ class NotificationService {
       if (batch.scheduledDate == null) continue;
       final notificationId = _stableNotificationId(vehicle.id, i);
       final scheduledAt = _atEight(batch.scheduledDate!);
-      final title = '${vehicle.name}: đến lịch bảo trì';
+      final title = '${vehicle.name}: đến lịch bảo dưỡng';
       final names = batch.reminders.map((item) => item.item.name).join(', ');
       final body = 'Nên làm chung: $names';
 

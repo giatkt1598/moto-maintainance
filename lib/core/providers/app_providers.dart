@@ -233,7 +233,7 @@ class AppActions {
       final items = await database.getItems(vehicleId);
       await notifications.rescheduleVehicle(vehicle, items);
     } catch (_) {
-      // Không để lỗi notification làm hỏng thao tác lưu dữ liệu bảo trì.
+      // Không để lỗi notification làm hỏng thao tác lưu dữ liệu bảo dưỡng.
     }
   }
 

@@ -146,7 +146,7 @@ class _VehicleCard extends ConsumerWidget {
                     reminders.when(
                       data: (items) {
                         if (items.isEmpty) {
-                          return const Text('Chưa có hạng mục bảo trì.');
+                          return const Text('Chưa có hạng mục bảo dưỡng.');
                         }
                         final first = items.first;
                         final date = first.estimatedDueDate;

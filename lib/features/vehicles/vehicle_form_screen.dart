@@ -209,7 +209,7 @@ class _VehicleFormScreenState extends ConsumerState<VehicleFormScreen> {
       builder: (context) => AlertDialog(
         title: const Text('Xóa xe máy?'),
         content: Text(
-          'Xe "${vehicle.name}" và toàn bộ hạng mục, lịch sử bảo trì sẽ bị xóa.',
+          'Xe "${vehicle.name}" và toàn bộ hạng mục, lịch sử bảo dưỡng sẽ bị xóa.',
         ),
         actions: [
           TextButton(
@@ -281,7 +281,7 @@ class _ImagePickerField extends StatelessWidget {
             OutlinedButton.icon(
               onPressed: onPick,
               icon: const Icon(Icons.photo_camera_back_outlined),
-              label: Text(hasImage ? 'Đổi ảnh xe' : 'Chọn ảnh xe'),
+              label: Text(hasImage ? 'Đổi ảnh' : 'Chọn ảnh'),
             ),
             const SizedBox(width: 8),
             if (hasImage)

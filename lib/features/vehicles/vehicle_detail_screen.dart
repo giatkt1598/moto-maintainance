@@ -494,9 +494,7 @@ class _BatchCard extends ConsumerWidget {
                 dense: true,
                 contentPadding: EdgeInsets.zero,
                 title: Text(reminder.item.name),
-                subtitle: Text(
-                  '${reminderStatusLabel(reminder.status)} • ${_itemCycleText(reminder.item)} • ${_dueLimitText(reminder)}',
-                ),
+                subtitle: Text(_batchReminderText(reminder)),
               ),
             ),
           ],
@@ -523,7 +521,7 @@ class _MaintenanceSection extends ConsumerWidget {
             children: [
               Expanded(
                 child: Text(
-                  'Hạng mục bảo trì',
+                  'Hạng mục bảo dưỡng',
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
               ),
@@ -740,12 +738,29 @@ String _itemCycleText(MaintenanceItem item) {
 
 String _dueLimitText(ItemReminder reminder) {
   final parts = <String>[];
-  if (reminder.item.hasKmInterval) {
+  if (reminder.item.hasKmInterval && reminder.overdueKm > 0) {
     parts.add('quá hạn ${_formatKmValue(reminder.overdueKm)} km');
   }
   if (reminder.overdueDate != null) {
-    parts.add('quá hạn ${relativeDateLabel(reminder.overdueDate!)}');
+    final today = DateTime.now();
+    final start = DateTime(today.year, today.month, today.day);
+    final date = reminder.overdueDate!;
+    final overdueDate = DateTime(date.year, date.month, date.day);
+    final overdueDays = start.difference(overdueDate).inDays;
+    if (overdueDays > 0) {
+      parts.add('quá hạn ${_formatDays(overdueDays)}');
+    }
   }
+  return parts.join(' • ');
+}
+
+String _batchReminderText(ItemReminder reminder) {
+  final parts = <String>[
+    reminderStatusLabel(reminder.status),
+    _itemCycleText(reminder.item),
+  ];
+  final dueLimit = _dueLimitText(reminder);
+  if (dueLimit.isNotEmpty) parts.add(dueLimit);
   return parts.join(' • ');
 }
 
