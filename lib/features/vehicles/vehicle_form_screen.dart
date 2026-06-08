@@ -238,7 +238,7 @@ class _VehicleFormScreenState extends ConsumerState<VehicleFormScreen> {
   }
 }
 
-class _ImagePickerField extends StatelessWidget {
+class _ImagePickerField extends StatefulWidget {
   const _ImagePickerField({
     required this.imagePath,
     required this.onPick,
@@ -250,8 +250,36 @@ class _ImagePickerField extends StatelessWidget {
   final VoidCallback onRemove;
 
   @override
+  State<_ImagePickerField> createState() => _ImagePickerFieldState();
+}
+
+class _ImagePickerFieldState extends State<_ImagePickerField> {
+  late final TransformationController _transformationController;
+
+  @override
+  void initState() {
+    super.initState();
+    _transformationController = TransformationController();
+  }
+
+  @override
+  void didUpdateWidget(covariant _ImagePickerField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.imagePath != widget.imagePath) {
+      _transformationController.value = Matrix4.identity();
+    }
+  }
+
+  @override
+  void dispose() {
+    _transformationController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final hasImage = imagePath.isNotEmpty && File(imagePath).existsSync();
+    final hasImage =
+        widget.imagePath.isNotEmpty && File(widget.imagePath).existsSync();
     return AspectRatio(
       aspectRatio: 16 / 9,
       child: ClipRRect(
@@ -264,7 +292,18 @@ class _ImagePickerField extends StatelessWidget {
                 color: Theme.of(context).colorScheme.surfaceContainerHighest,
               ),
               child: hasImage
-                  ? Image.file(File(imagePath), fit: BoxFit.cover)
+                  ? InteractiveViewer(
+                      transformationController: _transformationController,
+                      minScale: 0.5,
+                      maxScale: 4,
+                      boundaryMargin: const EdgeInsets.all(160),
+                      child: SizedBox.expand(
+                        child: Image.file(
+                          File(widget.imagePath),
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    )
                   : Center(
                       child: Icon(
                         Icons.two_wheeler,
@@ -280,7 +319,7 @@ class _ImagePickerField extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   FilledButton.icon(
-                    onPressed: onPick,
+                    onPressed: widget.onPick,
                     icon: const Icon(Icons.photo_camera_back_outlined),
                     label: Text(hasImage ? 'Đổi ảnh' : 'Chọn ảnh'),
                   ),
@@ -288,7 +327,7 @@ class _ImagePickerField extends StatelessWidget {
                     const SizedBox(width: 4),
                     IconButton.filledTonal(
                       tooltip: 'Gỡ ảnh',
-                      onPressed: onRemove,
+                      onPressed: widget.onRemove,
                       icon: const Icon(Icons.delete_outline),
                     ),
                   ],

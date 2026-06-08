@@ -69,9 +69,10 @@ class VehicleWidgetProvider : AppWidgetProvider() {
                 views.setTextViewText(R.id.widget_title, "")
                 views.setTextViewText(
                     R.id.widget_subtitle,
-                    "Chọn xe trong Cài đặt để hiển thị widget",
+                    "Chọn xe trong Cài đặt",
                 )
-                views.setTextViewText(R.id.widget_reminder, "Chưa chọn xe")
+                views.setTextViewText(R.id.widget_reminder, "")
+                views.setTextColor(R.id.widget_subtitle, Color.rgb(156, 163, 175))
                 views.setTextColor(R.id.widget_reminder, Color.rgb(156, 163, 175))
                 manager.updateAppWidget(appWidgetId, views)
                 return
@@ -88,14 +89,13 @@ class VehicleWidgetProvider : AppWidgetProvider() {
 
             views.setTextViewText(
                 R.id.widget_title,
-                prefs.getString(KEY_TITLE, "").orEmpty(),
+                titleLine(
+                    title = prefs.getString(KEY_TITLE, "").orEmpty(),
+                    subtitle = prefs.getString(KEY_SUBTITLE, "").orEmpty(),
+                ),
             )
             views.setTextViewText(
                 R.id.widget_subtitle,
-                prefs.getString(KEY_SUBTITLE, "").orEmpty(),
-            )
-            views.setTextViewText(
-                R.id.widget_reminder,
                 reminderText(
                     kind = prefs.getString(KEY_REMINDER_KIND, "").orEmpty(),
                     fallback = prefs.getString(KEY_REMINDER, "").orEmpty(),
@@ -103,6 +103,8 @@ class VehicleWidgetProvider : AppWidgetProvider() {
                     dueAtMillis = prefs.getLong(KEY_DUE_AT_MILLIS, 0L),
                 ),
             )
+            views.setTextViewText(R.id.widget_reminder, "")
+            views.setTextColor(R.id.widget_subtitle, statusColor(prefs.getString(KEY_STATUS, "ok").orEmpty()))
             views.setTextColor(
                 R.id.widget_reminder,
                 statusColor(prefs.getString(KEY_STATUS, "ok").orEmpty()),
@@ -131,6 +133,12 @@ class VehicleWidgetProvider : AppWidgetProvider() {
                 "missingDailyKm" -> Color.rgb(156, 163, 175)
                 else -> Color.rgb(74, 222, 128)
             }
+        }
+
+        private fun titleLine(title: String, subtitle: String): String {
+            if (title.isEmpty()) return subtitle
+            if (subtitle.isEmpty()) return title
+            return "$title ($subtitle)"
         }
 
         private fun reminderText(
