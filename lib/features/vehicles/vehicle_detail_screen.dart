@@ -44,7 +44,7 @@ class VehicleDetailScreen extends ConsumerWidget {
                 icon: const Icon(Icons.history),
               ),
               IconButton(
-                tooltip: 'Sửa xe',
+                tooltip: 'Sửa thông tin phương tiện',
                 onPressed: () => Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (_) => VehicleFormScreen(vehicle: vehicle),
@@ -110,8 +110,9 @@ class _VehicleTitle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final style =
-        Theme.of(context).appBarTheme.titleTextStyle ??
-        Theme.of(context).textTheme.titleLarge;
+        (Theme.of(context).appBarTheme.titleTextStyle ??
+                Theme.of(context).textTheme.titleLarge)
+            ?.copyWith(fontSize: 18);
     final plate = licensePlate.trim();
     if (plate.isEmpty) {
       return Text(name, style: style);
@@ -124,6 +125,7 @@ class _VehicleTitle extends StatelessWidget {
           TextSpan(
             text: ' ($plate)',
             style: style?.copyWith(
+              fontSize: (style.fontSize ?? 18) * 0.82,
               fontStyle: FontStyle.italic,
               fontWeight: FontWeight.w400,
             ),

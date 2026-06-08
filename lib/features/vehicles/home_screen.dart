@@ -246,6 +246,7 @@ class _VehicleNameWithPlate extends StatelessWidget {
           TextSpan(
             text: ' ($plate)',
             style: style?.copyWith(
+              fontSize: (style?.fontSize ?? 22) * 0.82,
               fontStyle: FontStyle.italic,
               fontWeight: FontWeight.w400,
             ),

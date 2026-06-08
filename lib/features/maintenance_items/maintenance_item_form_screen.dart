@@ -101,7 +101,10 @@ class _MaintenanceItemFormScreenState
             const SizedBox(height: 12),
             TextFormField(
               controller: _description,
-              decoration: const InputDecoration(labelText: 'Mô tả'),
+              decoration: const InputDecoration(
+                labelText: 'Mô tả',
+                alignLabelWithHint: true,
+              ),
               keyboardType: TextInputType.multiline,
               textInputAction: TextInputAction.newline,
               minLines: 3,

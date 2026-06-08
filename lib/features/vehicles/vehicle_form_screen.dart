@@ -60,11 +60,13 @@ class _VehicleFormScreenState extends ConsumerState<VehicleFormScreen> {
     final editing = widget.vehicle != null;
     return Scaffold(
       appBar: AppBar(
-        title: Text(editing ? 'Sửa xe' : 'Thêm xe'),
+        title: Text(
+          editing ? 'Sửa thông tin phương tiện' : 'Thêm phương tiện mới',
+        ),
         actions: [
           if (editing)
             IconButton(
-              tooltip: 'Xóa xe',
+              tooltip: 'Xóa phương tiện',
               onPressed: _saving ? null : _confirmDelete,
               icon: const Icon(Icons.delete_outline),
             ),
@@ -144,7 +146,7 @@ class _VehicleFormScreenState extends ConsumerState<VehicleFormScreen> {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Icon(Icons.save),
-              label: Text(editing ? 'Lưu xe' : 'Tạo xe'),
+              label: Text(editing ? 'Lưu thông tin' : 'Tạo mới'),
             ),
           ],
         ),
