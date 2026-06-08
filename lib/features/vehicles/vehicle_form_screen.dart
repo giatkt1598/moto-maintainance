@@ -252,14 +252,14 @@ class _ImagePickerField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasImage = imagePath.isNotEmpty && File(imagePath).existsSync();
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        AspectRatio(
-          aspectRatio: 16 / 9,
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: DecoratedBox(
+    return AspectRatio(
+      aspectRatio: 16 / 9,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            DecoratedBox(
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surfaceContainerHighest,
               ),
@@ -273,26 +273,31 @@ class _ImagePickerField extends StatelessWidget {
                       ),
                     ),
             ),
-          ),
-        ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            OutlinedButton.icon(
-              onPressed: onPick,
-              icon: const Icon(Icons.photo_camera_back_outlined),
-              label: Text(hasImage ? 'Đổi ảnh' : 'Chọn ảnh'),
-            ),
-            const SizedBox(width: 8),
-            if (hasImage)
-              IconButton(
-                tooltip: 'Gỡ ảnh',
-                onPressed: onRemove,
-                icon: const Icon(Icons.delete_outline),
+            Positioned(
+              right: 4,
+              bottom: 4,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  FilledButton.icon(
+                    onPressed: onPick,
+                    icon: const Icon(Icons.photo_camera_back_outlined),
+                    label: Text(hasImage ? 'Đổi ảnh' : 'Chọn ảnh'),
+                  ),
+                  if (hasImage) ...[
+                    const SizedBox(width: 4),
+                    IconButton.filledTonal(
+                      tooltip: 'Gỡ ảnh',
+                      onPressed: onRemove,
+                      icon: const Icon(Icons.delete_outline),
+                    ),
+                  ],
+                ],
               ),
+            ),
           ],
         ),
-      ],
+      ),
     );
   }
 }
