@@ -49,6 +49,9 @@ class HomeScreen extends ConsumerWidget {
       body: AsyncValueView(
         value: vehicles,
         data: (items) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            ref.read(appActionsProvider).syncSelectedVehicleWidget();
+          });
           if (items.isEmpty) return _EmptyHome(text: text);
           return ListView.separated(
             padding: const EdgeInsets.all(16),

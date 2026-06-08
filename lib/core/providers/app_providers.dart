@@ -5,6 +5,7 @@ import '../database/app_database.dart';
 import '../database/app_models.dart';
 import '../notifications/notification_service.dart';
 import '../settings/app_settings.dart';
+import '../widget/vehicle_widget_bridge.dart';
 
 final databaseProvider = FutureProvider<AppDatabase>((ref) async {
   final database = AppDatabase();
@@ -79,6 +80,10 @@ final serviceBatchesProvider =
 
 final appActionsProvider = Provider<AppActions>((ref) => AppActions(ref));
 
+final selectedWidgetVehicleIdProvider = FutureProvider<String?>((ref) {
+  return VehicleWidgetBridge.getSelectedVehicleId();
+});
+
 class AppActions {
   AppActions(this._ref);
 
@@ -106,6 +111,7 @@ class AppActions {
     await _reschedule(id);
     _invalidateVehicle(id);
     _ref.invalidate(vehiclesProvider);
+    await _syncWidgetIfSelected(id);
     return id;
   }
 
@@ -131,15 +137,23 @@ class AppActions {
     await _reschedule(id);
     _invalidateVehicle(id);
     _ref.invalidate(vehiclesProvider);
+    await _syncWidgetIfSelected(id);
   }
 
   Future<void> deleteVehicle(String id) async {
     final database = await _ref.read(databaseProvider.future);
     final notifications = await _ref.read(notificationServiceProvider.future);
+    final selectedWidgetVehicleId =
+        await VehicleWidgetBridge.getSelectedVehicleId();
     await notifications.cancelVehicle(id);
     await database.deleteVehicle(id);
     _invalidateVehicle(id);
     _ref.invalidate(vehiclesProvider);
+    if (selectedWidgetVehicleId == id) {
+      await VehicleWidgetBridge.setSelectedVehicleId(null);
+      await VehicleWidgetBridge.clearVehicleWidget();
+      _ref.invalidate(selectedWidgetVehicleIdProvider);
+    }
   }
 
   Future<void> syncNotificationsForSettings(bool enabled) async {
@@ -184,6 +198,7 @@ class AppActions {
     );
     await _reschedule(vehicleId);
     _invalidateVehicle(vehicleId);
+    await _syncWidgetIfSelected(vehicleId);
   }
 
   Future<void> updateItem(MaintenanceItem item) async {
@@ -202,6 +217,7 @@ class AppActions {
     );
     await _reschedule(item.vehicleId);
     _invalidateVehicle(item.vehicleId);
+    await _syncWidgetIfSelected(item.vehicleId);
   }
 
   Future<void> deleteItem(MaintenanceItem item) async {
@@ -209,6 +225,7 @@ class AppActions {
     await database.deleteItem(item.id);
     await _reschedule(item.vehicleId);
     _invalidateVehicle(item.vehicleId);
+    await _syncWidgetIfSelected(item.vehicleId);
   }
 
   Future<void> markCompleted({
@@ -225,6 +242,48 @@ class AppActions {
     );
     await _reschedule(vehicle.id);
     _invalidateVehicle(vehicle.id);
+    await _syncWidgetIfSelected(vehicle.id);
+  }
+
+  Future<void> setWidgetVehicle(String? vehicleId) async {
+    await VehicleWidgetBridge.setSelectedVehicleId(vehicleId);
+    _ref.invalidate(selectedWidgetVehicleIdProvider);
+    if (vehicleId == null || vehicleId.isEmpty) {
+      await VehicleWidgetBridge.clearVehicleWidget();
+      return;
+    }
+    await syncSelectedVehicleWidget();
+  }
+
+  Future<void> syncSelectedVehicleWidget() async {
+    try {
+      final selectedVehicleId =
+          await VehicleWidgetBridge.getSelectedVehicleId();
+      if (selectedVehicleId == null) {
+        await VehicleWidgetBridge.clearVehicleWidget();
+        return;
+      }
+
+      final database = await _ref.read(databaseProvider.future);
+      final vehicle = await database.getVehicle(selectedVehicleId);
+      if (vehicle == null) {
+        await VehicleWidgetBridge.setSelectedVehicleId(null);
+        await VehicleWidgetBridge.clearVehicleWidget();
+        _ref.invalidate(selectedWidgetVehicleIdProvider);
+        return;
+      }
+
+      final items = await database.getItems(vehicle.id);
+      final reminders = const ReminderCalculator().calculateItemReminders(
+        vehicle,
+        items,
+      );
+      await VehicleWidgetBridge.updateVehicleWidget(
+        buildVehicleWidgetPayload(vehicle, reminders),
+      );
+    } catch (_) {
+      // Widget Android là phần phụ trợ; không để lỗi platform làm hỏng luồng app.
+    }
   }
 
   Future<void> _reschedule(String vehicleId) async {
@@ -252,5 +311,17 @@ class AppActions {
     _ref.invalidate(serviceBatchesProvider(vehicleId));
     _ref.invalidate(serviceLogsProvider(vehicleId));
     _ref.invalidate(mileageLogsProvider(vehicleId));
+  }
+
+  Future<void> _syncWidgetIfSelected(String vehicleId) async {
+    try {
+      final selectedVehicleId =
+          await VehicleWidgetBridge.getSelectedVehicleId();
+      if (selectedVehicleId == vehicleId) {
+        await syncSelectedVehicleWidget();
+      }
+    } catch (_) {
+      // Bỏ qua lỗi platform widget để thao tác chính vẫn hoàn tất.
+    }
   }
 }
