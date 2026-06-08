@@ -473,13 +473,11 @@ class _BatchCard extends ConsumerWidget {
                           items: batch.reminders
                               .map((item) => item.item)
                               .toList(),
-                          note: 'Làm theo batch',
+                          note: 'Làm theo lịch',
                         );
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Đã đánh dấu hoàn tất batch'),
-                        ),
+                        const SnackBar(content: Text('Đã đánh dấu hoàn tất')),
                       );
                     }
                   },
