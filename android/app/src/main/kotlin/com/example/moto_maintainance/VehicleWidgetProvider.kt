@@ -10,6 +10,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.os.Build
+import android.os.Bundle
 import android.view.View
 import android.widget.RemoteViews
 import java.io.File
@@ -25,6 +26,16 @@ class VehicleWidgetProvider : AppWidgetProvider() {
         for (appWidgetId in appWidgetIds) {
             updateWidget(context, appWidgetManager, appWidgetId)
         }
+    }
+
+    override fun onAppWidgetOptionsChanged(
+        context: Context,
+        appWidgetManager: AppWidgetManager,
+        appWidgetId: Int,
+        newOptions: Bundle,
+    ) {
+        super.onAppWidgetOptionsChanged(context, appWidgetManager, appWidgetId, newOptions)
+        updateWidget(context, appWidgetManager, appWidgetId)
     }
 
     companion object {
@@ -59,7 +70,11 @@ class VehicleWidgetProvider : AppWidgetProvider() {
             appWidgetId: Int,
         ) {
             val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            val views = RemoteViews(context.packageName, R.layout.vehicle_widget)
+            val compact = isCompact(manager, appWidgetId)
+            val views = RemoteViews(
+                context.packageName,
+                if (compact) R.layout.vehicle_widget else R.layout.vehicle_widget_expanded,
+            )
             val hasData = prefs.getBoolean(KEY_HAS_DATA, false)
 
             views.setOnClickPendingIntent(R.id.widget_root, openAppIntent(context, prefs.getString(KEY_VEHICLE_ID, null)))
@@ -72,6 +87,7 @@ class VehicleWidgetProvider : AppWidgetProvider() {
                     "Chọn xe trong Cài đặt",
                 )
                 views.setTextViewText(R.id.widget_reminder, "")
+                views.setViewVisibility(R.id.widget_reminder, View.GONE)
                 views.setTextColor(R.id.widget_subtitle, Color.rgb(156, 163, 175))
                 views.setTextColor(R.id.widget_reminder, Color.rgb(156, 163, 175))
                 manager.updateAppWidget(appWidgetId, views)
@@ -89,28 +105,46 @@ class VehicleWidgetProvider : AppWidgetProvider() {
 
             views.setTextViewText(
                 R.id.widget_title,
-                titleLine(
-                    title = prefs.getString(KEY_TITLE, "").orEmpty(),
-                    subtitle = prefs.getString(KEY_SUBTITLE, "").orEmpty(),
-                ),
+                if (compact) {
+                    titleLine(
+                        title = prefs.getString(KEY_TITLE, "").orEmpty(),
+                        subtitle = prefs.getString(KEY_SUBTITLE, "").orEmpty(),
+                    )
+                } else {
+                    prefs.getString(KEY_TITLE, "").orEmpty()
+                },
             )
-            views.setTextViewText(
-                R.id.widget_subtitle,
-                reminderText(
-                    kind = prefs.getString(KEY_REMINDER_KIND, "").orEmpty(),
-                    fallback = prefs.getString(KEY_REMINDER, "").orEmpty(),
-                    itemName = prefs.getString(KEY_ITEM_NAME, "").orEmpty(),
-                    dueAtMillis = prefs.getLong(KEY_DUE_AT_MILLIS, 0L),
-                ),
+            val reminder = reminderText(
+                kind = prefs.getString(KEY_REMINDER_KIND, "").orEmpty(),
+                fallback = prefs.getString(KEY_REMINDER, "").orEmpty(),
+                itemName = prefs.getString(KEY_ITEM_NAME, "").orEmpty(),
+                dueAtMillis = prefs.getLong(KEY_DUE_AT_MILLIS, 0L),
             )
-            views.setTextViewText(R.id.widget_reminder, "")
-            views.setTextColor(R.id.widget_subtitle, statusColor(prefs.getString(KEY_STATUS, "ok").orEmpty()))
+            if (compact) {
+                views.setTextViewText(R.id.widget_subtitle, reminder)
+                views.setTextViewText(R.id.widget_reminder, "")
+                views.setViewVisibility(R.id.widget_reminder, View.GONE)
+            } else {
+                views.setTextViewText(
+                    R.id.widget_subtitle,
+                    prefs.getString(KEY_SUBTITLE, "").orEmpty(),
+                )
+                views.setTextViewText(R.id.widget_reminder, reminder)
+                views.setViewVisibility(R.id.widget_reminder, View.VISIBLE)
+            }
+            views.setTextColor(R.id.widget_subtitle, if (compact) statusColor(prefs.getString(KEY_STATUS, "ok").orEmpty()) else Color.rgb(209, 213, 219))
             views.setTextColor(
                 R.id.widget_reminder,
                 statusColor(prefs.getString(KEY_STATUS, "ok").orEmpty()),
             )
 
             manager.updateAppWidget(appWidgetId, views)
+        }
+
+        private fun isCompact(manager: AppWidgetManager, appWidgetId: Int): Boolean {
+            val options = manager.getAppWidgetOptions(appWidgetId)
+            val minHeight = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 0)
+            return minHeight <= 100
         }
 
         private fun openAppIntent(context: Context, vehicleId: String?): PendingIntent {

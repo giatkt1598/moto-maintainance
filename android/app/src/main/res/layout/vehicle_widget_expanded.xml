@@ -12,8 +12,8 @@
         android:layout_gravity="top|end"
         android:layout_marginTop="12dp"
         android:layout_marginEnd="12dp"
-        android:contentDescription="@null"
         android:adjustViewBounds="true"
+        android:contentDescription="@null"
         android:scaleType="fitCenter"
         android:visibility="gone" />
 
@@ -35,7 +35,7 @@
             android:ellipsize="end"
             android:maxLines="2"
             android:textColor="#F9FAFB"
-            android:textSize="18sp"
+            android:textSize="24sp"
             android:textStyle="bold" />
 
         <TextView
@@ -45,7 +45,7 @@
             android:layout_marginTop="4dp"
             android:ellipsize="end"
             android:maxLines="2"
-            android:textColor="#93C5FD"
+            android:textColor="#D1D5DB"
             android:textSize="18sp" />
 
         <TextView
@@ -54,9 +54,8 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:ellipsize="end"
-            android:maxLines="1"
+            android:maxLines="2"
             android:textColor="#93C5FD"
-            android:textSize="18sp"
-            android:visibility="gone" />
+            android:textSize="18sp" />
     </LinearLayout>
 </FrameLayout>
