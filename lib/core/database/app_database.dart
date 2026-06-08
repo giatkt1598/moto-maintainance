@@ -88,6 +88,16 @@ class AppDatabase extends GeneratedDatabase {
       )
     ''');
     await customStatement('''
+      CREATE TABLE IF NOT EXISTS mileage_logs (
+        id TEXT PRIMARY KEY,
+        vehicle_id TEXT NOT NULL REFERENCES vehicles(id) ON DELETE CASCADE,
+        previous_km REAL NOT NULL,
+        current_km REAL NOT NULL,
+        delta_km REAL NOT NULL,
+        created_at INTEGER NOT NULL
+      )
+    ''');
+    await customStatement('''
       CREATE TABLE IF NOT EXISTS scheduled_reminders (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         vehicle_id TEXT NOT NULL REFERENCES vehicles(id) ON DELETE CASCADE,
@@ -169,6 +179,14 @@ class AppDatabase extends GeneratedDatabase {
     ).watch().map((rows) => rows.map(_logFromRow).toList());
   }
 
+  Stream<List<MileageLog>> watchMileageLogs(String vehicleId) {
+    return customSelect(
+      'SELECT * FROM mileage_logs WHERE vehicle_id = ? ORDER BY created_at DESC',
+      variables: [Variable.withString(vehicleId)],
+      readsFrom: const {},
+    ).watch().map((rows) => rows.map(_mileageLogFromRow).toList());
+  }
+
   Future<String> createVehicle({
     required String name,
     required String licensePlate,
@@ -207,8 +225,8 @@ class AppDatabase extends GeneratedDatabase {
           description: seed.description,
           intervalMinKm: seed.intervalMinKm,
           intervalMaxKm: seed.intervalMaxKm,
-          intervalMinDays: 0,
-          intervalMaxDays: 0,
+          intervalMinDays: seed.intervalMinDays,
+          intervalMaxDays: seed.intervalMaxDays,
           lastServiceKm: currentKm,
           lastServiceDate: now,
         );
@@ -226,23 +244,45 @@ class AppDatabase extends GeneratedDatabase {
     required double dailyKm,
     required int groupingWindowDays,
   }) async {
-    await customUpdate(
-      '''
-      UPDATE vehicles
-      SET name = ?, license_plate = ?, image_path = ?, current_km = ?, daily_km = ?, grouping_window_days = ?, updated_at = ?
-      WHERE id = ?
-      ''',
-      variables: [
-        Variable.withString(name),
-        Variable.withString(licensePlate),
-        Variable.withString(imagePath),
-        Variable.withReal(currentKm),
-        Variable.withReal(dailyKm),
-        Variable.withInt(groupingWindowDays),
-        Variable.withInt(_millis(DateTime.now())),
-        Variable.withString(id),
-      ],
-    );
+    final current = await getVehicle(id);
+    final now = DateTime.now();
+    await transaction(() async {
+      if (current != null && current.currentKm != currentKm) {
+        final deltaKm = currentKm - current.currentKm;
+        await customInsert(
+          '''
+          INSERT INTO mileage_logs (
+            id, vehicle_id, previous_km, current_km, delta_km, created_at
+          ) VALUES (?, ?, ?, ?, ?, ?)
+          ''',
+          variables: [
+            Variable.withString(_uuid.v4()),
+            Variable.withString(id),
+            Variable.withReal(current.currentKm),
+            Variable.withReal(currentKm),
+            Variable.withReal(deltaKm),
+            Variable.withInt(_millis(now)),
+          ],
+        );
+      }
+      await customUpdate(
+        '''
+        UPDATE vehicles
+        SET name = ?, license_plate = ?, image_path = ?, current_km = ?, daily_km = ?, grouping_window_days = ?, updated_at = ?
+        WHERE id = ?
+        ''',
+        variables: [
+          Variable.withString(name),
+          Variable.withString(licensePlate),
+          Variable.withString(imagePath),
+          Variable.withReal(currentKm),
+          Variable.withReal(dailyKm),
+          Variable.withInt(groupingWindowDays),
+          Variable.withInt(_millis(now)),
+          Variable.withString(id),
+        ],
+      );
+    });
   }
 
   Future<void> deleteVehicle(String id) async {
@@ -525,6 +565,17 @@ class AppDatabase extends GeneratedDatabase {
       serviceKm: _readDouble(row, 'service_km'),
       serviceDate: _fromMillis(row.read<int>('service_date')),
       note: row.read<String>('note'),
+      createdAt: _fromMillis(row.read<int>('created_at')),
+    );
+  }
+
+  MileageLog _mileageLogFromRow(QueryRow row) {
+    return MileageLog(
+      id: row.read<String>('id'),
+      vehicleId: row.read<String>('vehicle_id'),
+      previousKm: _readDouble(row, 'previous_km'),
+      currentKm: _readDouble(row, 'current_km'),
+      deltaKm: _readDouble(row, 'delta_km'),
       createdAt: _fromMillis(row.read<int>('created_at')),
     );
   }

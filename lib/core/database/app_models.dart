@@ -107,6 +107,24 @@ class ServiceLog {
   final DateTime createdAt;
 }
 
+class MileageLog {
+  const MileageLog({
+    required this.id,
+    required this.vehicleId,
+    required this.previousKm,
+    required this.currentKm,
+    required this.deltaKm,
+    required this.createdAt,
+  });
+
+  final String id;
+  final String vehicleId;
+  final double previousKm;
+  final double currentKm;
+  final double deltaKm;
+  final DateTime createdAt;
+}
+
 class ItemReminder {
   const ItemReminder({
     required this.item,

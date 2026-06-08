@@ -52,6 +52,14 @@ final serviceLogsProvider = FutureProvider.family<List<ServiceLog>, String>((
   return database.watchLogs(vehicleId).first;
 });
 
+final mileageLogsProvider = FutureProvider.family<List<MileageLog>, String>((
+  ref,
+  vehicleId,
+) async {
+  final database = await ref.watch(databaseProvider.future);
+  return database.watchMileageLogs(vehicleId).first;
+});
+
 final itemRemindersProvider = FutureProvider.family<List<ItemReminder>, String>(
   (ref, vehicleId) async {
     final vehicle = await ref.watch(vehicleProvider(vehicleId).future);
@@ -243,5 +251,6 @@ class AppActions {
     _ref.invalidate(itemRemindersProvider(vehicleId));
     _ref.invalidate(serviceBatchesProvider(vehicleId));
     _ref.invalidate(serviceLogsProvider(vehicleId));
+    _ref.invalidate(mileageLogsProvider(vehicleId));
   }
 }
