@@ -525,6 +525,18 @@ class _MaintenanceTile extends ConsumerWidget {
     final item = reminder.item;
     final date = reminder.estimatedDueDate;
     final dateText = date == null ? 'Chưa tính ngày' : relativeDateLabel(date);
+    final titleStyle = Theme.of(context).textTheme.titleMedium;
+    final dueStyle = titleStyle?.copyWith(
+      color: Theme.of(context).colorScheme.onSurfaceVariant,
+      fontStyle: FontStyle.italic,
+      fontWeight: FontWeight.w400,
+    );
+    final detailStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
+      color: Theme.of(context).colorScheme.onSurfaceVariant,
+    );
+    final lastServiceText =
+        '${item.lastServiceKm} km'
+        '${item.lastServiceDate == null ? '' : ' (${_formatDate(item.lastServiceDate!)})'}';
     return Slidable(
       key: ValueKey(item.id),
       startActionPane: ActionPane(
@@ -554,10 +566,25 @@ class _MaintenanceTile extends ConsumerWidget {
               ),
             );
           },
-          title: Text(item.name),
-          subtitle: Text(
-            '${_itemCycleText(item)} • lần cuối ${item.lastServiceKm} km'
-            '${item.lastServiceDate == null ? '' : ' (${_formatDate(item.lastServiceDate!)})'} • $dateText',
+          title: Text.rich(
+            TextSpan(
+              children: [
+                TextSpan(text: item.name),
+                TextSpan(text: ' ($dateText)', style: dueStyle),
+              ],
+            ),
+            style: titleStyle,
+          ),
+          subtitle: Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Chu kỳ: ${_itemCycleText(item)}', style: detailStyle),
+                const SizedBox(height: 2),
+                Text('Lần cuối thay thế: $lastServiceText', style: detailStyle),
+              ],
+            ),
           ),
           leading: Icon(
             _statusIcon(reminder.status),
@@ -660,12 +687,10 @@ Color _statusColor(BuildContext context, ReminderStatus status) {
 String _itemCycleText(MaintenanceItem item) {
   final parts = <String>[];
   if (item.hasKmInterval) {
-    parts.add('${item.intervalMinKm}-${item.intervalMaxKm} km');
+    parts.add(_formatKmRange(item.intervalMinKm, item.intervalMaxKm));
   }
   if (item.hasTimeInterval) {
-    parts.add(
-      '${_formatDays(item.intervalMinDays)}-${_formatDays(item.intervalMaxDays)}',
-    );
+    parts.add(_formatDayRange(item.intervalMinDays, item.intervalMaxDays));
   }
   return parts.isEmpty ? 'Chưa có chu kỳ' : parts.join(' hoặc ');
 }
@@ -686,6 +711,16 @@ String _formatDays(int days) {
   if (days % 365 == 0) return '${days ~/ 365} năm';
   if (days % 30 == 0) return '${days ~/ 30} tháng';
   return '$days ngày';
+}
+
+String _formatKmRange(int minKm, int maxKm) {
+  if (minKm == maxKm) return '$maxKm km';
+  return '$minKm-$maxKm km';
+}
+
+String _formatDayRange(int minDays, int maxDays) {
+  if (minDays == maxDays) return _formatDays(maxDays);
+  return '${_formatDays(minDays)}-${_formatDays(maxDays)}';
 }
 
 String _formatDate(DateTime date) {
