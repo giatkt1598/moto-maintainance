@@ -64,7 +64,7 @@ class _MaintenanceItemFormScreenState
           : '',
     );
     _lastKm = TextEditingController(
-      text: '${item?.lastServiceKm ?? widget.vehicle.currentKm}',
+      text: _formatNumber(item?.lastServiceKm ?? widget.vehicle.currentKm),
     );
     _lastServiceDate = item?.lastServiceDate ?? DateTime.now();
     _useKmCycle = item?.hasKmInterval ?? true;
@@ -199,8 +199,10 @@ class _MaintenanceItemFormScreenState
               decoration: const InputDecoration(
                 labelText: 'Km lần cuối đã thay/kiểm tra',
               ),
-              keyboardType: TextInputType.number,
-              validator: _positiveInt,
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              validator: _nonNegativeDouble,
             ),
             const SizedBox(height: 12),
             ListTile(
@@ -292,7 +294,7 @@ class _MaintenanceItemFormScreenState
           intervalMaxKm: maxKm,
           intervalMinDays: minDays,
           intervalMaxDays: maxDays,
-          lastServiceKm: int.parse(_lastKm.text),
+          lastServiceKm: _parseDouble(_lastKm.text),
           lastServiceDate: _lastServiceDate,
         );
       } else {
@@ -306,7 +308,7 @@ class _MaintenanceItemFormScreenState
             intervalMaxKm: maxKm,
             intervalMinDays: minDays,
             intervalMaxDays: maxDays,
-            lastServiceKm: int.parse(_lastKm.text),
+            lastServiceKm: _parseDouble(_lastKm.text),
             lastServiceDate: _lastServiceDate,
             isEnabled: item.isEnabled,
             createdAt: item.createdAt,
@@ -315,6 +317,12 @@ class _MaintenanceItemFormScreenState
         );
       }
       if (mounted) Navigator.of(context).pop();
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Không lưu được hạng mục: $error')),
+        );
+      }
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -374,8 +382,8 @@ String? _required(String? value) {
   return null;
 }
 
-String? _positiveInt(String? value) {
-  final parsed = int.tryParse(value ?? '');
+String? _nonNegativeDouble(String? value) {
+  final parsed = _tryParseDouble(value ?? '');
   if (parsed == null || parsed < 0) return 'Nhập số hợp lệ';
   return null;
 }
@@ -389,6 +397,17 @@ String? _optionalPositiveInt(String? value) {
 
 int _parseOptionalInt(String value) {
   return int.tryParse(value.trim()) ?? 0;
+}
+
+double _parseDouble(String value) => _tryParseDouble(value) ?? 0;
+
+double? _tryParseDouble(String value) {
+  return double.tryParse(value.trim().replaceAll(',', '.'));
+}
+
+String _formatNumber(double value) {
+  if (value == value.roundToDouble()) return value.toStringAsFixed(0);
+  return value.toString();
 }
 
 String _formatDate(DateTime date) {

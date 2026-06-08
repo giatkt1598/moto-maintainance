@@ -30,7 +30,7 @@ class AppDatabase extends GeneratedDatabase {
         license_plate TEXT NOT NULL DEFAULT '',
         image_path TEXT NOT NULL DEFAULT '',
         profile TEXT NOT NULL,
-        current_km INTEGER NOT NULL,
+        current_km REAL NOT NULL,
         daily_km REAL NOT NULL,
         grouping_window_days INTEGER NOT NULL,
         is_active INTEGER NOT NULL,
@@ -58,7 +58,7 @@ class AppDatabase extends GeneratedDatabase {
         interval_max_km INTEGER NOT NULL,
         interval_min_days INTEGER NOT NULL DEFAULT 0,
         interval_max_days INTEGER NOT NULL DEFAULT 0,
-        last_service_km INTEGER NOT NULL,
+        last_service_km REAL NOT NULL,
         last_service_date INTEGER,
         is_enabled INTEGER NOT NULL,
         created_at INTEGER NOT NULL,
@@ -81,7 +81,7 @@ class AppDatabase extends GeneratedDatabase {
         vehicle_id TEXT NOT NULL REFERENCES vehicles(id) ON DELETE CASCADE,
         item_id TEXT NOT NULL,
         item_name TEXT NOT NULL,
-        service_km INTEGER NOT NULL,
+        service_km REAL NOT NULL,
         service_date INTEGER NOT NULL,
         note TEXT NOT NULL,
         created_at INTEGER NOT NULL
@@ -174,7 +174,7 @@ class AppDatabase extends GeneratedDatabase {
     required String licensePlate,
     required String imagePath,
     required VehicleProfile profile,
-    required int currentKm,
+    required double currentKm,
     required double dailyKm,
     required int groupingWindowDays,
   }) async {
@@ -193,7 +193,7 @@ class AppDatabase extends GeneratedDatabase {
           Variable.withString(licensePlate),
           Variable.withString(imagePath),
           Variable.withString(profile.name),
-          Variable.withInt(currentKm),
+          Variable.withReal(currentKm),
           Variable.withReal(dailyKm),
           Variable.withInt(groupingWindowDays),
           Variable.withInt(_millis(now)),
@@ -222,7 +222,7 @@ class AppDatabase extends GeneratedDatabase {
     required String name,
     required String licensePlate,
     required String imagePath,
-    required int currentKm,
+    required double currentKm,
     required double dailyKm,
     required int groupingWindowDays,
   }) async {
@@ -236,7 +236,7 @@ class AppDatabase extends GeneratedDatabase {
         Variable.withString(name),
         Variable.withString(licensePlate),
         Variable.withString(imagePath),
-        Variable.withInt(currentKm),
+        Variable.withReal(currentKm),
         Variable.withReal(dailyKm),
         Variable.withInt(groupingWindowDays),
         Variable.withInt(_millis(DateTime.now())),
@@ -260,7 +260,7 @@ class AppDatabase extends GeneratedDatabase {
     required int intervalMaxKm,
     required int intervalMinDays,
     required int intervalMaxDays,
-    required int lastServiceKm,
+    required double lastServiceKm,
     DateTime? lastServiceDate,
   }) {
     return _insertItem(
@@ -284,7 +284,7 @@ class AppDatabase extends GeneratedDatabase {
     required int intervalMaxKm,
     required int intervalMinDays,
     required int intervalMaxDays,
-    required int lastServiceKm,
+    required double lastServiceKm,
     DateTime? lastServiceDate,
     required bool isEnabled,
   }) async {
@@ -303,7 +303,7 @@ class AppDatabase extends GeneratedDatabase {
         Variable.withInt(intervalMaxKm),
         Variable.withInt(intervalMinDays),
         Variable.withInt(intervalMaxDays),
-        Variable.withInt(lastServiceKm),
+        Variable.withReal(lastServiceKm),
         _nullableMillis(lastServiceDate),
         Variable.withInt(isEnabled ? 1 : 0),
         Variable.withInt(_millis(DateTime.now())),
@@ -338,7 +338,7 @@ class AppDatabase extends GeneratedDatabase {
             Variable.withString(vehicle.id),
             Variable.withString(item.id),
             Variable.withString(item.name),
-            Variable.withInt(vehicle.currentKm),
+            Variable.withReal(vehicle.currentKm),
             Variable.withInt(_millis(now)),
             Variable.withString(note),
             Variable.withInt(_millis(now)),
@@ -351,7 +351,7 @@ class AppDatabase extends GeneratedDatabase {
           WHERE id = ?
           ''',
           variables: [
-            Variable.withInt(vehicle.currentKm),
+            Variable.withReal(vehicle.currentKm),
             Variable.withInt(_millis(now)),
             Variable.withInt(_millis(now)),
             Variable.withString(item.id),
@@ -426,7 +426,7 @@ class AppDatabase extends GeneratedDatabase {
       await customUpdate(
         '''
         UPDATE vehicles
-        SET current_km = current_km + CAST(ROUND(daily_km * ?) AS INTEGER),
+        SET current_km = current_km + (daily_km * ?),
             updated_at = ?
         WHERE is_active = 1 AND daily_km > 0
         ''',
@@ -449,7 +449,7 @@ class AppDatabase extends GeneratedDatabase {
     required int intervalMaxKm,
     required int intervalMinDays,
     required int intervalMaxDays,
-    required int lastServiceKm,
+    required double lastServiceKm,
     DateTime? lastServiceDate,
   }) async {
     final now = DateTime.now();
@@ -471,7 +471,7 @@ class AppDatabase extends GeneratedDatabase {
         Variable.withInt(intervalMaxKm),
         Variable.withInt(intervalMinDays),
         Variable.withInt(intervalMaxDays),
-        Variable.withInt(lastServiceKm),
+        Variable.withReal(lastServiceKm),
         _nullableMillis(lastServiceDate),
         Variable.withInt(_millis(now)),
         Variable.withInt(_millis(now)),
@@ -487,7 +487,7 @@ class AppDatabase extends GeneratedDatabase {
       licensePlate: row.read<String>('license_plate'),
       imagePath: row.read<String>('image_path'),
       profile: VehicleProfile.values.byName(row.read<String>('profile')),
-      currentKm: row.read<int>('current_km'),
+      currentKm: _readDouble(row, 'current_km'),
       dailyKm: row.read<double>('daily_km'),
       groupingWindowDays: row.read<int>('grouping_window_days'),
       isActive: row.read<int>('is_active') == 1,
@@ -506,7 +506,7 @@ class AppDatabase extends GeneratedDatabase {
       intervalMaxKm: row.read<int>('interval_max_km'),
       intervalMinDays: row.read<int>('interval_min_days'),
       intervalMaxDays: row.read<int>('interval_max_days'),
-      lastServiceKm: row.read<int>('last_service_km'),
+      lastServiceKm: _readDouble(row, 'last_service_km'),
       lastServiceDate: _fromNullableMillis(
         row.readNullable<int>('last_service_date'),
       ),
@@ -522,7 +522,7 @@ class AppDatabase extends GeneratedDatabase {
       vehicleId: row.read<String>('vehicle_id'),
       itemId: row.read<String>('item_id'),
       itemName: row.read<String>('item_name'),
-      serviceKm: row.read<int>('service_km'),
+      serviceKm: _readDouble(row, 'service_km'),
       serviceDate: _fromMillis(row.read<int>('service_date')),
       note: row.read<String>('note'),
       createdAt: _fromMillis(row.read<int>('created_at')),
@@ -594,6 +594,14 @@ DateTime _fromMillis(int millis) => DateTime.fromMillisecondsSinceEpoch(millis);
 DateTime? _fromNullableMillis(int? millis) {
   if (millis == null || millis == 0) return null;
   return DateTime.fromMillisecondsSinceEpoch(millis);
+}
+
+double _readDouble(QueryRow row, String key) {
+  final value = row.data[key];
+  if (value is int) return value.toDouble();
+  if (value is double) return value;
+  if (value is String) return double.tryParse(value) ?? 0;
+  return 0;
 }
 
 String _dateKey(DateTime date) {

@@ -147,6 +147,26 @@ extension VehicleProfileSeeds on VehicleProfile {
           intervalMaxKm: 2500,
         ),
       ],
+      VehicleProfile.other => const [
+        MaintenanceSeed(
+          name: 'Kiểm tra tổng quát',
+          description: 'Kiểm tra tình trạng vận hành tổng thể',
+          intervalMinKm: 1000,
+          intervalMaxKm: 1500,
+        ),
+        MaintenanceSeed(
+          name: 'Phanh',
+          description: 'Kiểm tra độ ăn phanh và độ mòn má phanh',
+          intervalMinKm: 3000,
+          intervalMaxKm: 5000,
+        ),
+        MaintenanceSeed(
+          name: 'Lốp xe',
+          description: 'Kiểm tra áp suất và độ mòn lốp',
+          intervalMinKm: 3000,
+          intervalMaxKm: 5000,
+        ),
+      ],
     };
   }
 }

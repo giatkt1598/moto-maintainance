@@ -1,5 +1,6 @@
 import '../database/app_database.dart';
 import '../notifications/notification_service.dart';
+import '../settings/app_settings.dart';
 
 class DailyMileageService {
   const DailyMileageService();
@@ -10,6 +11,7 @@ class DailyMileageService {
       await database.initialize();
       final changedVehicleIds = await database.applyDailyMileageIfNeeded();
       if (changedVehicleIds.isEmpty) return;
+      if (!await areNotificationsEnabled()) return;
 
       final notifications = NotificationService(database);
       for (final vehicleId in changedVehicleIds) {

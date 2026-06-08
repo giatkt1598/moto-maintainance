@@ -18,7 +18,7 @@ class ReminderCalculator {
       final overdueKm = hasKm
           ? item.lastServiceKm + item.intervalMaxKm
           : item.lastServiceKm;
-      final remainingKm = hasKm ? nextDueKm - vehicle.currentKm : 0;
+      final remainingKm = hasKm ? nextDueKm - vehicle.currentKm : 0.0;
       final kmOverdue = hasKm && vehicle.currentKm >= overdueKm;
       final kmDue = hasKm && remainingKm <= 0;
       final DateTime? kmDueDate = hasKm && vehicle.dailyKm > 0

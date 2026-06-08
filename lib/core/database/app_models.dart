@@ -3,7 +3,8 @@ enum VehicleProfile {
   manualClutch,
   underbone,
   electricMotorbike,
-  bicycle;
+  bicycle,
+  other;
 
   String get label {
     return switch (this) {
@@ -12,6 +13,7 @@ enum VehicleProfile {
       VehicleProfile.underbone => 'Xe số',
       VehicleProfile.electricMotorbike => 'Xe máy điện',
       VehicleProfile.bicycle => 'Xe đạp',
+      VehicleProfile.other => 'Khác',
     };
   }
 }
@@ -38,7 +40,7 @@ class Vehicle {
   final String licensePlate;
   final String imagePath;
   final VehicleProfile profile;
-  final int currentKm;
+  final double currentKm;
   final double dailyKm;
   final int groupingWindowDays;
   final bool isActive;
@@ -71,7 +73,7 @@ class MaintenanceItem {
   final int intervalMaxKm;
   final int intervalMinDays;
   final int intervalMaxDays;
-  final int lastServiceKm;
+  final double lastServiceKm;
   final DateTime? lastServiceDate;
   final bool isEnabled;
   final DateTime createdAt;
@@ -99,7 +101,7 @@ class ServiceLog {
   final String vehicleId;
   final String itemId;
   final String itemName;
-  final int serviceKm;
+  final double serviceKm;
   final DateTime serviceDate;
   final String note;
   final DateTime createdAt;
@@ -118,9 +120,9 @@ class ItemReminder {
 
   final MaintenanceItem item;
   final ReminderStatus status;
-  final int nextDueKm;
-  final int overdueKm;
-  final int remainingKm;
+  final double nextDueKm;
+  final double overdueKm;
+  final double remainingKm;
   final DateTime? estimatedDueDate;
   final DateTime? overdueDate;
 }

@@ -31,7 +31,7 @@ class ServiceLogsScreen extends ConsumerWidget {
                 child: ListTile(
                   title: Text(log.itemName),
                   subtitle: Text(
-                    '${DateFormat('dd/MM/yyyy').format(log.serviceDate)} • ${log.serviceKm} km'
+                    '${DateFormat('dd/MM/yyyy').format(log.serviceDate)} • ${_formatKmValue(log.serviceKm)} km'
                     '${log.note.isEmpty ? '' : ' • ${log.note}'}',
                   ),
                 ),
@@ -42,4 +42,9 @@ class ServiceLogsScreen extends ConsumerWidget {
       ),
     );
   }
+}
+
+String _formatKmValue(double value) {
+  if (value == value.roundToDouble()) return value.toStringAsFixed(0);
+  return value.toString();
 }

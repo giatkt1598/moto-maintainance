@@ -63,7 +63,7 @@ class NotificationService {
           notificationDetails: const NotificationDetails(
             android: AndroidNotificationDetails(
               'maintenance_reminders',
-              'Bảo trì xe máy',
+              'Bảo dưỡng xe',
               channelDescription: 'Nhắc thay thế và kiểm tra phụ tùng định kỳ',
               importance: Importance.high,
               priority: Priority.high,

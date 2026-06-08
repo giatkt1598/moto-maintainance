@@ -34,7 +34,9 @@ class _VehicleFormScreenState extends ConsumerState<VehicleFormScreen> {
     final vehicle = widget.vehicle;
     _name = TextEditingController(text: vehicle?.name ?? '');
     _licensePlate = TextEditingController(text: vehicle?.licensePlate ?? '');
-    _currentKm = TextEditingController(text: '${vehicle?.currentKm ?? 0}');
+    _currentKm = TextEditingController(
+      text: _formatNumber(vehicle?.currentKm ?? 0),
+    );
     _dailyKm = TextEditingController(text: '${vehicle?.dailyKm ?? 30}');
     _groupDays = TextEditingController(
       text: '${vehicle?.groupingWindowDays ?? 7}',
@@ -110,8 +112,10 @@ class _VehicleFormScreenState extends ConsumerState<VehicleFormScreen> {
             TextFormField(
               controller: _currentKm,
               decoration: const InputDecoration(labelText: 'Số km hiện tại'),
-              keyboardType: TextInputType.number,
-              validator: _positiveInt,
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              validator: _nonNegativeDouble,
             ),
             const SizedBox(height: 12),
             TextFormField(
@@ -160,8 +164,8 @@ class _VehicleFormScreenState extends ConsumerState<VehicleFormScreen> {
           licensePlate: _licensePlate.text.trim(),
           imagePath: _imagePath,
           profile: _profile,
-          currentKm: int.parse(_currentKm.text),
-          dailyKm: double.parse(_dailyKm.text),
+          currentKm: _parseDouble(_currentKm.text),
+          dailyKm: _parseDouble(_dailyKm.text),
           groupingWindowDays: int.parse(_groupDays.text),
         );
       } else {
@@ -170,8 +174,8 @@ class _VehicleFormScreenState extends ConsumerState<VehicleFormScreen> {
           name: _name.text.trim(),
           licensePlate: _licensePlate.text.trim(),
           imagePath: _imagePath,
-          currentKm: int.parse(_currentKm.text),
-          dailyKm: double.parse(_dailyKm.text),
+          currentKm: _parseDouble(_currentKm.text),
+          dailyKm: _parseDouble(_dailyKm.text),
           groupingWindowDays: int.parse(_groupDays.text),
         );
       }
@@ -303,7 +307,18 @@ String? _positiveInt(String? value) {
 }
 
 String? _nonNegativeDouble(String? value) {
-  final parsed = double.tryParse(value ?? '');
+  final parsed = _tryParseDouble(value ?? '');
   if (parsed == null || parsed < 0) return 'Nhập số hợp lệ';
   return null;
+}
+
+double _parseDouble(String value) => _tryParseDouble(value) ?? 0;
+
+double? _tryParseDouble(String value) {
+  return double.tryParse(value.trim().replaceAll(',', '.'));
+}
+
+String _formatNumber(double value) {
+  if (value == value.roundToDouble()) return value.toStringAsFixed(0);
+  return value.toString();
 }

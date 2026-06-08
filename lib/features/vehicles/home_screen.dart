@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/database/app_models.dart';
 import '../../core/providers/app_providers.dart';
+import '../../core/settings/app_settings.dart';
+import '../../features/settings/settings_screen.dart';
 import '../../shared/utils/relative_time.dart';
 import '../../shared/widgets/async_value_view.dart';
 import 'vehicle_detail_screen.dart';
@@ -16,17 +18,27 @@ class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final vehicles = ref.watch(vehiclesProvider);
+    final language =
+        ref.watch(settingsControllerProvider).value?.language ?? AppLanguage.vi;
+    final text = _HomeText(language);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Bảo trì xe máy'),
+        title: Text(text.title),
         actions: [
           IconButton(
-            tooltip: 'Tải lại',
+            tooltip: text.refresh,
             onPressed: () => ref.invalidate(vehiclesProvider),
             icon: const Icon(Icons.refresh),
           ),
           IconButton(
-            tooltip: 'Thêm xe',
+            tooltip: text.settings,
+            onPressed: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const SettingsScreen())),
+            icon: const Icon(Icons.settings),
+          ),
+          IconButton(
+            tooltip: text.addVehicle,
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const VehicleFormScreen()),
             ),
@@ -37,7 +49,7 @@ class HomeScreen extends ConsumerWidget {
       body: AsyncValueView(
         value: vehicles,
         data: (items) {
-          if (items.isEmpty) return const _EmptyHome();
+          if (items.isEmpty) return _EmptyHome(text: text);
           return ListView.separated(
             padding: const EdgeInsets.all(16),
             itemCount: items.length,
@@ -52,7 +64,9 @@ class HomeScreen extends ConsumerWidget {
 }
 
 class _EmptyHome extends StatelessWidget {
-  const _EmptyHome();
+  const _EmptyHome({required this.text});
+
+  final _HomeText text;
 
   @override
   Widget build(BuildContext context) {
@@ -69,14 +83,11 @@ class _EmptyHome extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              'Chưa có xe',
+              text.emptyTitle,
               style: Theme.of(context).textTheme.headlineSmall,
             ),
             const SizedBox(height: 8),
-            const Text(
-              'Thêm xe đầu tiên để tạo lịch nhắc thay nhớt và phụ tùng.',
-              textAlign: TextAlign.center,
-            ),
+            Text(text.emptyDescription, textAlign: TextAlign.center),
           ],
         ),
       ),
@@ -94,6 +105,9 @@ class _VehicleCard extends ConsumerWidget {
     final reminders = ref.watch(itemRemindersProvider(vehicle.id));
     final photo = vehicle.imagePath.isEmpty ? null : File(vehicle.imagePath);
     final hasPhoto = photo != null && photo.existsSync();
+    final imageOverlayColor = Theme.of(context).brightness == Brightness.dark
+        ? const Color(0x99000000)
+        : const Color(0x99FFFFFF);
     return Card(
       clipBehavior: Clip.antiAlias,
       elevation: 6,
@@ -113,21 +127,20 @@ class _VehicleCard extends ConsumerWidget {
           child: Stack(
             children: [
               if (hasPhoto)
-                const Positioned.fill(
-                  child: ColoredBox(color: Color(0x99FFFFFF)),
-                ),
+                Positioned.fill(child: ColoredBox(color: imageOverlayColor)),
               Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      vehicle.name,
+                    _VehicleNameWithPlate(
+                      name: vehicle.name,
+                      licensePlate: vehicle.licensePlate,
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      '${vehicle.currentKm} km hiện tại • ${vehicle.dailyKm.toStringAsFixed(1)} km/ngày',
+                      '${_formatKmValue(vehicle.currentKm)} km hiện tại • ${vehicle.dailyKm.toStringAsFixed(1)} km/ngày',
                     ),
                     const SizedBox(height: 12),
                     reminders.when(
@@ -189,4 +202,64 @@ Color _statusColor(BuildContext context, ReminderStatus status) {
     ReminderStatus.overdue => Theme.of(context).colorScheme.error,
     ReminderStatus.missingDailyKm => Colors.grey,
   };
+}
+
+class _HomeText {
+  const _HomeText(this.language);
+
+  final AppLanguage language;
+
+  bool get _en => language == AppLanguage.en;
+
+  String get title => _en ? 'Vehicle care' : 'Bảo dưỡng xe';
+  String get refresh => _en ? 'Refresh' : 'Tải lại';
+  String get settings => _en ? 'Settings' : 'Cài đặt';
+  String get addVehicle => _en ? 'Add vehicle' : 'Thêm xe';
+  String get emptyTitle => _en ? 'No vehicles' : 'Chưa có xe';
+  String get emptyDescription => _en
+      ? 'Add your first vehicle to create oil and parts maintenance reminders.'
+      : 'Thêm xe đầu tiên để tạo lịch nhắc thay nhớt và phụ tùng.';
+}
+
+class _VehicleNameWithPlate extends StatelessWidget {
+  const _VehicleNameWithPlate({
+    required this.name,
+    required this.licensePlate,
+    required this.style,
+  });
+
+  final String name;
+  final String licensePlate;
+  final TextStyle? style;
+
+  @override
+  Widget build(BuildContext context) {
+    final plate = licensePlate.trim();
+    if (plate.isEmpty) {
+      return Text(name, style: style);
+    }
+
+    return Text.rich(
+      TextSpan(
+        children: [
+          TextSpan(text: name),
+          TextSpan(
+            text: ' ($plate)',
+            style: style?.copyWith(
+              fontStyle: FontStyle.italic,
+              fontWeight: FontWeight.w400,
+            ),
+          ),
+        ],
+      ),
+      style: style,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+    );
+  }
+}
+
+String _formatKmValue(double value) {
+  if (value == value.roundToDouble()) return value.toStringAsFixed(0);
+  return value.toString();
 }

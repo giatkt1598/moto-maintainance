@@ -29,7 +29,10 @@ class VehicleDetailScreen extends ConsumerWidget {
         }
         return Scaffold(
           appBar: AppBar(
-            title: Text(vehicle.name),
+            title: _VehicleTitle(
+              name: vehicle.name,
+              licensePlate: vehicle.licensePlate,
+            ),
             actions: [
               IconButton(
                 tooltip: 'Lịch sử',
@@ -98,6 +101,42 @@ class _VehiclePhoto extends StatelessWidget {
   }
 }
 
+class _VehicleTitle extends StatelessWidget {
+  const _VehicleTitle({required this.name, required this.licensePlate});
+
+  final String name;
+  final String licensePlate;
+
+  @override
+  Widget build(BuildContext context) {
+    final style =
+        Theme.of(context).appBarTheme.titleTextStyle ??
+        Theme.of(context).textTheme.titleLarge;
+    final plate = licensePlate.trim();
+    if (plate.isEmpty) {
+      return Text(name, style: style);
+    }
+
+    return Text.rich(
+      TextSpan(
+        children: [
+          TextSpan(text: name),
+          TextSpan(
+            text: ' ($plate)',
+            style: style?.copyWith(
+              fontStyle: FontStyle.italic,
+              fontWeight: FontWeight.w400,
+            ),
+          ),
+        ],
+      ),
+      style: style,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+    );
+  }
+}
+
 class _VehicleSummary extends ConsumerStatefulWidget {
   const _VehicleSummary({required this.vehicle});
 
@@ -116,7 +155,9 @@ class _VehicleSummaryState extends ConsumerState<_VehicleSummary> {
   @override
   void initState() {
     super.initState();
-    _kmController = TextEditingController(text: '${widget.vehicle.currentKm}');
+    _kmController = TextEditingController(
+      text: _formatKmValue(widget.vehicle.currentKm),
+    );
     _kmFocusNode = FocusNode();
   }
 
@@ -125,7 +166,7 @@ class _VehicleSummaryState extends ConsumerState<_VehicleSummary> {
     super.didUpdateWidget(oldWidget);
     if (!_editingKm &&
         oldWidget.vehicle.currentKm != widget.vehicle.currentKm) {
-      _kmController.text = '${widget.vehicle.currentKm}';
+      _kmController.text = _formatKmValue(widget.vehicle.currentKm);
     }
   }
 
@@ -146,20 +187,20 @@ class _VehicleSummaryState extends ConsumerState<_VehicleSummary> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (vehicle.licensePlate.isNotEmpty) ...[
-              Text(
-                vehicle.licensePlate,
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const SizedBox(height: 8),
-            ],
+            // if (vehicle.licensePlate.isNotEmpty) ...[
+            //   Text(
+            //     vehicle.licensePlate,
+            //     style: Theme.of(context).textTheme.titleMedium,
+            //   ),
+            //   const SizedBox(height: 8),
+            // ],
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
                   child: _Metric(
                     label: 'Km hiện tại',
-                    value: '${vehicle.currentKm}',
+                    value: _formatKmValue(vehicle.currentKm),
                     editing: _editingKm,
                     saving: _savingKm,
                     controller: _kmController,
@@ -211,7 +252,7 @@ class _VehicleSummaryState extends ConsumerState<_VehicleSummary> {
 
   Future<void> _saveCurrentKm() async {
     if (_savingKm) return;
-    final newKm = int.tryParse(_kmController.text.trim());
+    final newKm = _tryParseDouble(_kmController.text);
     if (newKm == null || newKm < 0) {
       ScaffoldMessenger.of(
         context,
@@ -323,7 +364,9 @@ class _Metric extends StatelessWidget {
                 focusNode: focusNode,
                 autofocus: true,
                 enabled: !saving,
-                keyboardType: TextInputType.number,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
                 style: Theme.of(context).textTheme.titleSmall,
                 decoration: const InputDecoration(
                   border: InputBorder.none,
@@ -535,8 +578,8 @@ class _MaintenanceTile extends ConsumerWidget {
       color: Theme.of(context).colorScheme.onSurfaceVariant,
     );
     final lastServiceText =
-        '${item.lastServiceKm} km'
-        '${item.lastServiceDate == null ? '' : ' (${_formatDate(item.lastServiceDate!)})'}';
+        '${_formatKmValue(item.lastServiceKm)} km'
+        '${item.lastServiceDate == null ? '' : ' (${relativeDateLabel(item.lastServiceDate!)})'}';
     return Slidable(
       key: ValueKey(item.id),
       startActionPane: ActionPane(
@@ -575,17 +618,15 @@ class _MaintenanceTile extends ConsumerWidget {
             ),
             style: titleStyle,
           ),
-          subtitle: Padding(
-            padding: const EdgeInsets.only(top: 4),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Chu kỳ: ${_itemCycleText(item)}', style: detailStyle),
-                const SizedBox(height: 2),
-                Text('Lần cuối thay thế: $lastServiceText', style: detailStyle),
-              ],
-            ),
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(_itemCycleText(item), style: detailStyle),
+              const SizedBox(height: 2),
+              Text('Lần cuối $lastServiceText', style: detailStyle),
+            ],
           ),
+
           leading: Icon(
             _statusIcon(reminder.status),
             color: _statusColor(context, reminder.status),
@@ -698,7 +739,7 @@ String _itemCycleText(MaintenanceItem item) {
 String _dueLimitText(ItemReminder reminder) {
   final parts = <String>[];
   if (reminder.item.hasKmInterval) {
-    parts.add('quá hạn ${reminder.overdueKm} km');
+    parts.add('quá hạn ${_formatKmValue(reminder.overdueKm)} km');
   }
   if (reminder.overdueDate != null) {
     parts.add('quá hạn ${relativeDateLabel(reminder.overdueDate!)}');
@@ -723,8 +764,11 @@ String _formatDayRange(int minDays, int maxDays) {
   return '${_formatDays(minDays)}-${_formatDays(maxDays)}';
 }
 
-String _formatDate(DateTime date) {
-  final day = date.day.toString().padLeft(2, '0');
-  final month = date.month.toString().padLeft(2, '0');
-  return '$day/$month/${date.year}';
+double? _tryParseDouble(String value) {
+  return double.tryParse(value.trim().replaceAll(',', '.'));
+}
+
+String _formatKmValue(double value) {
+  if (value == value.roundToDouble()) return value.toStringAsFixed(0);
+  return value.toString();
 }
