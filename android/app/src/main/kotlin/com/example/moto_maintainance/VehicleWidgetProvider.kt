@@ -8,7 +8,10 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.Paint
+import android.graphics.Rect
 import android.os.Build
 import android.os.Bundle
 import android.view.View
@@ -88,6 +91,7 @@ class VehicleWidgetProvider : AppWidgetProvider() {
                 )
                 views.setTextViewText(R.id.widget_reminder, "")
                 views.setViewVisibility(R.id.widget_reminder, View.GONE)
+                views.setViewVisibility(R.id.widget_status_icon, View.GONE)
                 views.setTextColor(R.id.widget_subtitle, Color.rgb(156, 163, 175))
                 views.setTextColor(R.id.widget_reminder, Color.rgb(156, 163, 175))
                 manager.updateAppWidget(appWidgetId, views)
@@ -99,7 +103,7 @@ class VehicleWidgetProvider : AppWidgetProvider() {
             if (bitmap == null) {
                 views.setViewVisibility(R.id.widget_image, View.GONE)
             } else {
-                views.setImageViewBitmap(R.id.widget_image, bitmap)
+                views.setImageViewBitmap(R.id.widget_image, trimTransparentPadding(bitmap))
                 views.setViewVisibility(R.id.widget_image, View.VISIBLE)
             }
 
@@ -132,10 +136,13 @@ class VehicleWidgetProvider : AppWidgetProvider() {
                 views.setTextViewText(R.id.widget_reminder, reminder)
                 views.setViewVisibility(R.id.widget_reminder, View.VISIBLE)
             }
-            views.setTextColor(R.id.widget_subtitle, if (compact) statusColor(prefs.getString(KEY_STATUS, "ok").orEmpty()) else Color.rgb(209, 213, 219))
+            val status = prefs.getString(KEY_STATUS, "ok").orEmpty()
+            views.setImageViewBitmap(R.id.widget_status_icon, statusIcon(status))
+            views.setViewVisibility(R.id.widget_status_icon, View.VISIBLE)
+            views.setTextColor(R.id.widget_subtitle, if (compact) Color.WHITE else Color.rgb(209, 213, 219))
             views.setTextColor(
                 R.id.widget_reminder,
-                statusColor(prefs.getString(KEY_STATUS, "ok").orEmpty()),
+                Color.WHITE,
             )
 
             manager.updateAppWidget(appWidgetId, views)
@@ -167,6 +174,51 @@ class VehicleWidgetProvider : AppWidgetProvider() {
                 "missingDailyKm" -> Color.rgb(156, 163, 175)
                 else -> Color.rgb(74, 222, 128)
             }
+        }
+
+        private fun statusIcon(status: String): Bitmap {
+            val size = 48
+            val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+            val canvas = Canvas(bitmap)
+            val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+            val center = size / 2f
+
+            paint.color = statusColor(status)
+            paint.style = Paint.Style.FILL
+            canvas.drawCircle(center, center, 21f, paint)
+
+            paint.color = Color.WHITE
+            paint.strokeWidth = 5f
+            paint.strokeCap = Paint.Cap.ROUND
+            paint.strokeJoin = Paint.Join.ROUND
+            paint.style = Paint.Style.STROKE
+
+            when (status) {
+                "overdue" -> {
+                    canvas.drawLine(center, 12f, center, 28f, paint)
+                    paint.style = Paint.Style.FILL
+                    canvas.drawCircle(center, 36f, 2.8f, paint)
+                }
+                "due", "dueSoon" -> {
+                    canvas.drawCircle(center, center, 10f, paint)
+                    canvas.drawLine(center, center, center, 17f, paint)
+                    canvas.drawLine(center, center, 31f, center, paint)
+                }
+                "missingDailyKm" -> {
+                    paint.textAlign = Paint.Align.CENTER
+                    paint.textSize = 31f
+                    paint.style = Paint.Style.FILL
+                    paint.strokeWidth = 0f
+                    paint.typeface = android.graphics.Typeface.DEFAULT_BOLD
+                    canvas.drawText("?", center, 35f, paint)
+                }
+                else -> {
+                    canvas.drawLine(13f, 25f, 21f, 33f, paint)
+                    canvas.drawLine(21f, 33f, 35f, 16f, paint)
+                }
+            }
+
+            return bitmap
         }
 
         private fun titleLine(title: String, subtitle: String): String {
@@ -252,6 +304,47 @@ class VehicleWidgetProvider : AppWidgetProvider() {
                 inSampleSize = sampleSize
             }
             return BitmapFactory.decodeFile(path, options)
+        }
+
+        private fun trimTransparentPadding(bitmap: Bitmap): Bitmap {
+            if (!bitmap.hasAlpha()) return bitmap
+
+            val bounds = transparentBounds(bitmap) ?: return bitmap
+            if (bounds.width() == bitmap.width && bounds.height() == bitmap.height) {
+                return bitmap
+            }
+
+            return Bitmap.createBitmap(
+                bitmap,
+                bounds.left,
+                bounds.top,
+                bounds.width(),
+                bounds.height(),
+            )
+        }
+
+        private fun transparentBounds(bitmap: Bitmap): Rect? {
+            var left = bitmap.width
+            var top = bitmap.height
+            var right = -1
+            var bottom = -1
+
+            val pixels = IntArray(bitmap.width)
+            for (y in 0 until bitmap.height) {
+                bitmap.getPixels(pixels, 0, bitmap.width, 0, y, bitmap.width, 1)
+                for (x in 0 until bitmap.width) {
+                    val alpha = pixels[x] ushr 24
+                    if (alpha > 8) {
+                        if (x < left) left = x
+                        if (x > right) right = x
+                        if (y < top) top = y
+                        if (y > bottom) bottom = y
+                    }
+                }
+            }
+
+            if (right < left || bottom < top) return null
+            return Rect(left, top, right + 1, bottom + 1)
         }
     }
 }

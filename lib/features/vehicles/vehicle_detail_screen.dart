@@ -91,11 +91,11 @@ class _VehiclePhoto extends StatelessWidget {
   Widget build(BuildContext context) {
     final file = File(imagePath);
     if (!file.existsSync()) return const SizedBox.shrink();
-    return AspectRatio(
-      aspectRatio: 16 / 9,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(8),
-        child: Image.file(file, fit: BoxFit.cover),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: ColoredBox(
+        color: Colors.white,
+        child: Image.file(file, width: double.infinity, fit: BoxFit.contain),
       ),
     );
   }

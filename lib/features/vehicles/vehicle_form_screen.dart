@@ -6,7 +6,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../core/database/app_models.dart';
 import '../../core/providers/app_providers.dart';
-import '../../shared/utils/local_image_store.dart';
+import 'vehicle_image_crop_screen.dart';
 
 class VehicleFormScreen extends ConsumerStatefulWidget {
   const VehicleFormScreen({super.key, this.vehicle});
@@ -194,7 +194,13 @@ class _VehicleFormScreenState extends ConsumerState<VehicleFormScreen> {
       maxWidth: 1600,
     );
     if (picked == null) return;
-    final savedPath = await saveVehicleImage(picked.path);
+    if (!mounted) return;
+    final savedPath = await Navigator.of(context).push<String>(
+      MaterialPageRoute(
+        builder: (_) => VehicleImageCropScreen(imagePath: picked.path),
+      ),
+    );
+    if (savedPath == null) return;
     if (mounted) {
       setState(() => _imagePath = savedPath);
     }
@@ -238,7 +244,7 @@ class _VehicleFormScreenState extends ConsumerState<VehicleFormScreen> {
   }
 }
 
-class _ImagePickerField extends StatefulWidget {
+class _ImagePickerField extends StatelessWidget {
   const _ImagePickerField({
     required this.imagePath,
     required this.onPick,
@@ -250,36 +256,8 @@ class _ImagePickerField extends StatefulWidget {
   final VoidCallback onRemove;
 
   @override
-  State<_ImagePickerField> createState() => _ImagePickerFieldState();
-}
-
-class _ImagePickerFieldState extends State<_ImagePickerField> {
-  late final TransformationController _transformationController;
-
-  @override
-  void initState() {
-    super.initState();
-    _transformationController = TransformationController();
-  }
-
-  @override
-  void didUpdateWidget(covariant _ImagePickerField oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.imagePath != widget.imagePath) {
-      _transformationController.value = Matrix4.identity();
-    }
-  }
-
-  @override
-  void dispose() {
-    _transformationController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final hasImage =
-        widget.imagePath.isNotEmpty && File(widget.imagePath).existsSync();
+    final hasImage = imagePath.isNotEmpty && File(imagePath).existsSync();
     return AspectRatio(
       aspectRatio: 16 / 9,
       child: ClipRRect(
@@ -292,18 +270,7 @@ class _ImagePickerFieldState extends State<_ImagePickerField> {
                 color: Theme.of(context).colorScheme.surfaceContainerHighest,
               ),
               child: hasImage
-                  ? InteractiveViewer(
-                      transformationController: _transformationController,
-                      minScale: 0.5,
-                      maxScale: 4,
-                      boundaryMargin: const EdgeInsets.all(160),
-                      child: SizedBox.expand(
-                        child: Image.file(
-                          File(widget.imagePath),
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                    )
+                  ? Image.file(File(imagePath), fit: BoxFit.cover)
                   : Center(
                       child: Icon(
                         Icons.two_wheeler,
@@ -319,7 +286,7 @@ class _ImagePickerFieldState extends State<_ImagePickerField> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   FilledButton.icon(
-                    onPressed: widget.onPick,
+                    onPressed: onPick,
                     icon: const Icon(Icons.photo_camera_back_outlined),
                     label: Text(hasImage ? 'Đổi ảnh' : 'Chọn ảnh'),
                   ),
@@ -327,7 +294,7 @@ class _ImagePickerFieldState extends State<_ImagePickerField> {
                     const SizedBox(width: 4),
                     IconButton.filledTonal(
                       tooltip: 'Gỡ ảnh',
-                      onPressed: widget.onRemove,
+                      onPressed: onRemove,
                       icon: const Icon(Icons.delete_outline),
                     ),
                   ],
