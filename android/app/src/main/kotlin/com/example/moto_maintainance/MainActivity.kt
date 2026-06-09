@@ -2,9 +2,13 @@ package com.example.moto_maintainance
 
 import android.content.Context
 import android.content.Intent
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
+import java.util.concurrent.TimeUnit
 
 class MainActivity : FlutterActivity() {
     override fun onNewIntent(intent: Intent) {
@@ -16,6 +20,7 @@ class MainActivity : FlutterActivity() {
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         persistPendingWidgetVehicle(intent)
+        scheduleVehicleWidgetSync()
 
         MethodChannel(
             flutterEngine.dartExecutor.binaryMessenger,
@@ -46,6 +51,7 @@ class MainActivity : FlutterActivity() {
                             putString(VehicleWidgetProvider.KEY_SELECTED_VEHICLE_ID, vehicleId)
                         }
                     }.apply()
+                    VehicleWidgetSyncer.sync(this)
                     VehicleWidgetProvider.updateAll(this)
                     result.success(null)
                 }
@@ -102,5 +108,17 @@ class MainActivity : FlutterActivity() {
             .edit()
             .putString(VehicleWidgetProvider.KEY_PENDING_OPEN_VEHICLE_ID, vehicleId)
             .apply()
+    }
+
+    private fun scheduleVehicleWidgetSync() {
+        val request = PeriodicWorkRequestBuilder<VehicleWidgetSyncWorker>(
+            15,
+            TimeUnit.MINUTES,
+        ).build()
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            VehicleWidgetSyncWorker.WORK_NAME,
+            ExistingPeriodicWorkPolicy.KEEP,
+            request,
+        )
     }
 }
