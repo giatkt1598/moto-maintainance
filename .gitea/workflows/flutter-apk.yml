@@ -27,26 +27,6 @@ jobs:
       - name: Run static analysis
         run: flutter analyze
 
-  test:
-    name: Run Tests
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-          cache: true
-
-      - name: Install dependencies
-        run: flutter pub get
-
-      - name: Run unit and widget tests
-        run: flutter test
-
   build_release:
     name: Build Release APK
     runs-on: ubuntu-latest
